@@ -38,8 +38,13 @@ namespace PhoneInventoryManagement.Controllers
             {
                 return NotFound();
             }
-
-            return Ok(wareHouse);
+            var x = new WareHouse()
+            {
+                WareHouseId = wareHouse.WareHouseId,
+                WareHouseName = wareHouse.WareHouseName,
+                IsActive = wareHouse.IsActive
+            };
+            return Ok(x);
         }
 
         // PUT: api/WareHouses/5
@@ -53,14 +58,20 @@ namespace PhoneInventoryManagement.Controllers
 
             if (id != wareHouse.WareHouseId)
             {
-                return BadRequest();
+                return BadRequest("Parameter id and Bill.BillId error.");
             }
-
-            db.Entry(wareHouse).State = EntityState.Modified;
+            var x = new WareHouse()
+            {
+                WareHouseId = wareHouse.WareHouseId,
+                WareHouseName = wareHouse.WareHouseName,
+                IsActive = wareHouse.IsActive
+            };
+            db.Entry(x).State = EntityState.Modified;
 
             try
             {
                 db.SaveChanges();
+                return Ok("Update succeed!");
             }
             catch (DbUpdateConcurrencyException)
             {
@@ -70,11 +81,10 @@ namespace PhoneInventoryManagement.Controllers
                 }
                 else
                 {
-                    throw;
+                    //throw;
+                    return BadRequest("Update failed!");
                 }
             }
-
-            return StatusCode(HttpStatusCode.NoContent);
         }
 
         // POST: api/WareHouses
@@ -85,11 +95,22 @@ namespace PhoneInventoryManagement.Controllers
             {
                 return BadRequest(ModelState);
             }
-
-            db.WareHouse.Add(wareHouse);
-            db.SaveChanges();
-
-            return CreatedAtRoute("DefaultApi", new { id = wareHouse.WareHouseId }, wareHouse);
+            var x = new WareHouse()
+            {
+                WareHouseName = wareHouse.WareHouseName,
+                IsActive = wareHouse.IsActive
+            };
+            db.WareHouse.Add(x);
+            try
+            {
+                db.SaveChanges();
+                //return CreatedAtRoute("DefaultApi", new { id = bill.BillId }, bill);
+                return Ok("Insert succeed!");
+            }
+            catch (Exception)
+            {
+                return BadRequest("The INSERT statement conflicted with the FOREIGN KEY constraint!");
+            }
         }
 
         // DELETE: api/WareHouses/5
@@ -101,11 +122,17 @@ namespace PhoneInventoryManagement.Controllers
             {
                 return NotFound();
             }
-
-            db.WareHouse.Remove(wareHouse);
-            db.SaveChanges();
-
-            return Ok(wareHouse);
+            wareHouse.IsActive = false;
+            db.Entry(wareHouse).State = EntityState.Modified;
+            try
+            {
+                db.SaveChanges();
+                return Ok("Delete succeed!");
+            }
+            catch (Exception)
+            {
+                return BadRequest("Delete failed!");
+            }
         }
 
         protected override void Dispose(bool disposing)

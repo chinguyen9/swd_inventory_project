@@ -17,9 +17,19 @@ namespace PhoneInventoryManagement.Controllers
         private PhoneIMDbContext db = new PhoneIMDbContext();
 
         // GET: api/Bills
-        public IQueryable<Bill> GetBill()
+        public IHttpActionResult GetBills()
         {
-            return db.Bill;
+            var result = db.Bill.Select(x => new
+            {
+                x.BillId,
+                x.DateCreate,
+                x.BillType,
+                x.IsActive,
+                x.UserId,
+                x.WareHouseId,
+                x.OrderId
+            });
+            return Ok(result);
         }
 
         // GET: api/Bills/5
@@ -27,12 +37,18 @@ namespace PhoneInventoryManagement.Controllers
         public IHttpActionResult GetBill(Guid id)
         {
             Bill bill = db.Bill.Find(id);
-            if (bill == null)
+            if (bill == null) return NotFound();
+            var x = new Bill()
             {
-                return NotFound();
-            }
-
-            return Ok(bill);
+                BillId = bill.BillId,
+                DateCreate = bill.DateCreate,
+                BillType = bill.BillType,
+                IsActive = bill.IsActive,
+                UserId = bill.UserId,
+                WareHouseId = bill.WareHouseId,
+                OrderId = bill.OrderId
+            };
+            return Ok(x);
         }
 
         // PUT: api/Bills/5
@@ -46,16 +62,27 @@ namespace PhoneInventoryManagement.Controllers
 
             if (id != bill.BillId)
             {
-                return BadRequest();
+                return BadRequest("Parameter id and Bill.BillId error.");
             }
+            var x = new Bill()
+            {
+                BillId = bill.BillId,
+                DateCreate = bill.DateCreate,
+                BillType = bill.BillType,
+                IsActive = bill.IsActive,
+                UserId = bill.UserId,
+                WareHouseId = bill.WareHouseId,
+                OrderId = bill.OrderId
+            };
 
-            db.Entry(bill).State = EntityState.Modified;
+            db.Entry(x).State = EntityState.Modified;
 
             try
             {
                 db.SaveChanges();
+                return Ok("Update succeed!");
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception)
             {
                 if (!BillExists(id))
                 {
@@ -63,11 +90,10 @@ namespace PhoneInventoryManagement.Controllers
                 }
                 else
                 {
-                    throw;
+                    //throw ex;
+                    return BadRequest("The INSERT statement conflicted with the FOREIGN KEY constraint!");
                 }
             }
-
-            return StatusCode(HttpStatusCode.NoContent);
         }
 
         // POST: api/Bills
@@ -78,11 +104,42 @@ namespace PhoneInventoryManagement.Controllers
             {
                 return BadRequest(ModelState);
             }
-
-            db.Bill.Add(bill);
-            db.SaveChanges();
-
-            return CreatedAtRoute("DefaultApi", new { id = bill.BillId }, bill);
+            Bill x = null;
+            if (bill.BillType.Equals("IMPORT"))
+            {
+                x = new Bill()
+                {
+                    DateCreate = bill.DateCreate,
+                    BillType = bill.BillType,
+                    IsActive = bill.IsActive,
+                    UserId = bill.UserId,
+                    WareHouseId = bill.WareHouseId
+                };
+            }
+            else if (bill.BillType.Equals("EXPORT"))
+            {
+                x = new Bill()
+                {
+                    DateCreate = bill.DateCreate,
+                    BillType = bill.BillType,
+                    IsActive = bill.IsActive,
+                    UserId = bill.UserId,
+                    WareHouseId = bill.WareHouseId,
+                    OrderId = bill.OrderId
+                };
+            }
+            
+            db.Bill.Add(x);
+            try
+            {
+                db.SaveChanges();
+                //return CreatedAtRoute("DefaultApi", new { id = bill.BillId }, bill);
+                return Ok("Insert succeed!");
+            }
+            catch (Exception)
+            {
+                return BadRequest("The INSERT statement conflicted with the FOREIGN KEY constraint!");
+            }
         }
 
         // DELETE: api/Bills/5
@@ -94,11 +151,17 @@ namespace PhoneInventoryManagement.Controllers
             {
                 return NotFound();
             }
-
-            db.Bill.Remove(bill);
-            db.SaveChanges();
-
-            return Ok(bill);
+            bill.IsActive = false;
+            db.Entry(bill).State = EntityState.Modified;
+            try
+            {
+                db.SaveChanges();
+                return Ok("Delete succeed!");
+            }
+            catch (Exception)
+            {
+                return BadRequest("Delete failed!");
+            }
         }
 
         protected override void Dispose(bool disposing)

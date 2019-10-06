@@ -17,9 +17,20 @@ namespace PhoneInventoryManagement.Controllers
         private PhoneIMDbContext db = new PhoneIMDbContext();
 
         // GET: api/Products
-        public IQueryable<Product> GetProduct()
+        public IHttpActionResult GetProduct()
         {
-            return db.Product;
+            var result = db.Product.Select(x => new
+            {
+                ProductId = x.ProductId,
+                ProductName = x.ProductName,
+                ProductType = x.ProductType,
+                Manufacturer = x.Manufacturer,
+                Color = x.Color,
+                Description = x.Description,
+                ImportPrice = x.ImportPrice,
+                IsActive = x.IsActive
+            });
+            return Ok(result);
         }
 
         // GET: api/Products/5
@@ -31,8 +42,18 @@ namespace PhoneInventoryManagement.Controllers
             {
                 return NotFound();
             }
-
-            return Ok(product);
+            var x = new Product()
+            {
+                ProductId = product.ProductId,
+                ProductName = product.ProductName,
+                ProductType = product.ProductType,
+                Manufacturer = product.Manufacturer,
+                Color = product.Color,
+                Description = product.Description,
+                ImportPrice = product.ImportPrice,
+                IsActive = product.IsActive
+            };
+            return Ok(x);
         }
 
         // PUT: api/Products/5
@@ -46,16 +67,27 @@ namespace PhoneInventoryManagement.Controllers
 
             if (id != product.ProductId)
             {
-                return BadRequest();
+                return BadRequest("Parameter id and Product.ProductId error.");
             }
-
-            db.Entry(product).State = EntityState.Modified;
+            var x = new Product()
+            {
+                ProductId = product.ProductId,
+                ProductName = product.ProductName,
+                ProductType = product.ProductType,
+                Manufacturer = product.Manufacturer,
+                Color = product.Color,
+                Description = product.Description,
+                ImportPrice = product.ImportPrice,
+                IsActive = product.IsActive
+            };
+            db.Entry(x).State = EntityState.Modified;
 
             try
             {
                 db.SaveChanges();
+                return Ok("Update succeed!");
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception)
             {
                 if (!ProductExists(id))
                 {
@@ -63,11 +95,10 @@ namespace PhoneInventoryManagement.Controllers
                 }
                 else
                 {
-                    throw;
+                    //throw ex;
+                    return BadRequest("The INSERT statement conflicted with the FOREIGN KEY constraint!");
                 }
             }
-
-            return StatusCode(HttpStatusCode.NoContent);
         }
 
         // POST: api/Products
@@ -78,11 +109,28 @@ namespace PhoneInventoryManagement.Controllers
             {
                 return BadRequest(ModelState);
             }
-
-            db.Product.Add(product);
-            db.SaveChanges();
-
-            return CreatedAtRoute("DefaultApi", new { id = product.ProductId }, product);
+            var x = new Product()
+            {
+                ProductId = product.ProductId,
+                ProductName = product.ProductName,
+                ProductType = product.ProductType,
+                Manufacturer = product.Manufacturer,
+                Color = product.Color,
+                Description = product.Description,
+                ImportPrice = product.ImportPrice,
+                IsActive = product.IsActive
+            };
+            db.Product.Add(x);
+            try
+            {
+                db.SaveChanges();
+                //return CreatedAtRoute("DefaultApi", new { id = bill.BillId }, bill);
+                return Ok("Insert succeed!");
+            }
+            catch (Exception)
+            {
+                return BadRequest("The INSERT statement conflicted with the FOREIGN KEY constraint!");
+            }
         }
 
         // DELETE: api/Products/5
@@ -94,11 +142,17 @@ namespace PhoneInventoryManagement.Controllers
             {
                 return NotFound();
             }
-
-            db.Product.Remove(product);
-            db.SaveChanges();
-
-            return Ok(product);
+            product.IsActive = false;
+            db.Entry(product).State = EntityState.Modified;
+            try
+            {
+                db.SaveChanges();
+                return Ok("Delete succeed!");
+            }
+            catch (Exception)
+            {
+                return BadRequest("Delete failed!");
+            }
         }
 
         protected override void Dispose(bool disposing)

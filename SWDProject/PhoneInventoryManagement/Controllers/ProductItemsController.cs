@@ -17,9 +17,17 @@ namespace PhoneInventoryManagement.Controllers
         private PhoneIMDbContext db = new PhoneIMDbContext();
 
         // GET: api/ProductItems
-        public IQueryable<ProductItem> GetProductItem()
+        public IHttpActionResult GetProductItem()
         {
-            return db.ProductItem;
+            var result = db.ProductItem.Select(x => new
+            {
+                x.ProductItemId,
+                x.IMEI,
+                x.IsActive,
+                x.ProductId,
+                x.BillId
+            });
+            return Ok(result);
         }
 
         // GET: api/ProductItems/5
@@ -31,8 +39,15 @@ namespace PhoneInventoryManagement.Controllers
             {
                 return NotFound();
             }
-
-            return Ok(productItem);
+            var x = new ProductItem
+            {
+                ProductItemId = productItem.ProductItemId,
+                IMEI = productItem.IMEI,
+                IsActive = productItem.IsActive,
+                ProductId = productItem.ProductId,
+                BillId = productItem.BillId
+            };
+            return Ok(x);
         }
 
         // PUT: api/ProductItems/5
@@ -46,16 +61,24 @@ namespace PhoneInventoryManagement.Controllers
 
             if (id != productItem.ProductItemId)
             {
-                return BadRequest();
+                return BadRequest("Parameter id and Bill.BillId error.");
             }
-
-            db.Entry(productItem).State = EntityState.Modified;
+            var x = new ProductItem
+            {
+                ProductItemId = productItem.ProductItemId,
+                IMEI = productItem.IMEI,
+                IsActive = productItem.IsActive,
+                ProductId = productItem.ProductId,
+                BillId = productItem.BillId
+            };
+            db.Entry(x).State = EntityState.Modified;
 
             try
             {
                 db.SaveChanges();
+                return Ok("Update succeed!");
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception)
             {
                 if (!ProductItemExists(id))
                 {
@@ -63,11 +86,9 @@ namespace PhoneInventoryManagement.Controllers
                 }
                 else
                 {
-                    throw;
+                    return BadRequest("The INSERT statement conflicted with the FOREIGN KEY constraint!");
                 }
             }
-
-            return StatusCode(HttpStatusCode.NoContent);
         }
 
         // POST: api/ProductItems
@@ -78,11 +99,28 @@ namespace PhoneInventoryManagement.Controllers
             {
                 return BadRequest(ModelState);
             }
-
-            db.ProductItem.Add(productItem);
-            db.SaveChanges();
-
-            return CreatedAtRoute("DefaultApi", new { id = productItem.ProductItemId }, productItem);
+            if (ProductItemIMEIExists(productItem.IMEI))
+            {
+                return BadRequest("IMEI already exist");
+            }
+            var x = new ProductItem
+            {
+                IMEI = productItem.IMEI,
+                IsActive = productItem.IsActive,
+                ProductId = productItem.ProductId,
+                BillId = productItem.BillId
+            };
+            db.ProductItem.Add(x);
+            try
+            {
+                db.SaveChanges();
+                return Ok("Insert succeed!");
+            }
+            catch (Exception)
+            {
+                return BadRequest("The INSERT statement conflicted with the FOREIGN KEY constraint!");
+            }
+            //return CreatedAtRoute("DefaultApi", new { id = productItem.ProductItemId }, productItem);
         }
 
         // DELETE: api/ProductItems/5
@@ -94,11 +132,17 @@ namespace PhoneInventoryManagement.Controllers
             {
                 return NotFound();
             }
-
-            db.ProductItem.Remove(productItem);
-            db.SaveChanges();
-
-            return Ok(productItem);
+            productItem.IsActive = false;
+            db.Entry(productItem).State = EntityState.Modified;
+            try
+            {
+                db.SaveChanges();
+                return Ok("Delete succeed!");
+            }
+            catch (Exception)
+            {
+                return BadRequest("Delete failed!");
+            }
         }
 
         protected override void Dispose(bool disposing)
@@ -113,6 +157,10 @@ namespace PhoneInventoryManagement.Controllers
         private bool ProductItemExists(Guid id)
         {
             return db.ProductItem.Count(e => e.ProductItemId == id) > 0;
+        }
+        private bool ProductItemIMEIExists(int imei)
+        {
+            return db.ProductItem.Count(e => e.IMEI == imei) > 0;
         }
     }
 }

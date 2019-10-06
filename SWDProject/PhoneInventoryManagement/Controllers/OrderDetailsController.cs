@@ -17,9 +17,18 @@ namespace PhoneInventoryManagement.Controllers
         private PhoneIMDbContext db = new PhoneIMDbContext();
 
         // GET: api/OrderDetails
-        public IQueryable<OrderDetail> GetOrderDetail()
+        public IHttpActionResult GetOrderDetail()
         {
-            return db.OrderDetail;
+            var result = db.OrderDetail.Select(x => new 
+            {
+                x.OrderDetailId,
+                x.Quantity,
+                x.SalePrice,
+                x.IsActive,
+                x.ProductId,
+                x.OrderId
+            });
+            return Ok(result);
         }
 
         // GET: api/OrderDetails/5
@@ -31,8 +40,16 @@ namespace PhoneInventoryManagement.Controllers
             {
                 return NotFound();
             }
-
-            return Ok(orderDetail);
+            var x = new OrderDetail()
+            {
+                OrderDetailId=orderDetail.OrderDetailId,
+                Quantity=orderDetail.Quantity,
+                SalePrice=orderDetail.SalePrice,
+                IsActive=orderDetail.IsActive,
+                ProductId=orderDetail.ProductId,
+                OrderId=orderDetail.OrderId
+            };
+            return Ok(x);
         }
 
         // PUT: api/OrderDetails/5
@@ -46,16 +63,24 @@ namespace PhoneInventoryManagement.Controllers
 
             if (id != orderDetail.OrderDetailId)
             {
-                return BadRequest();
+                return BadRequest("Parameter id and OrderDetail.OrderDetailId error.");
             }
-
-            db.Entry(orderDetail).State = EntityState.Modified;
-
+            var x = new OrderDetail()
+            {
+                OrderDetailId = orderDetail.OrderDetailId,
+                Quantity = orderDetail.Quantity,
+                SalePrice = orderDetail.SalePrice,
+                IsActive = orderDetail.IsActive,
+                ProductId = orderDetail.ProductId,
+                OrderId = orderDetail.OrderId
+            };
+            db.Entry(x).State = EntityState.Modified;
             try
             {
                 db.SaveChanges();
+                return Ok("Update succeed!");
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception)
             {
                 if (!OrderDetailExists(id))
                 {
@@ -63,11 +88,10 @@ namespace PhoneInventoryManagement.Controllers
                 }
                 else
                 {
-                    throw;
+                    //throw ex;
+                    return BadRequest("The INSERT statement conflicted with the FOREIGN KEY constraint!");
                 }
             }
-
-            return StatusCode(HttpStatusCode.NoContent);
         }
 
         // POST: api/OrderDetails
@@ -78,11 +102,25 @@ namespace PhoneInventoryManagement.Controllers
             {
                 return BadRequest(ModelState);
             }
-
-            db.OrderDetail.Add(orderDetail);
-            db.SaveChanges();
-
-            return CreatedAtRoute("DefaultApi", new { id = orderDetail.OrderDetailId }, orderDetail);
+            var x = new OrderDetail()
+            {
+                Quantity = orderDetail.Quantity,
+                SalePrice = orderDetail.SalePrice,
+                IsActive = orderDetail.IsActive,
+                ProductId = orderDetail.ProductId,
+                OrderId = orderDetail.OrderId
+            };
+            db.OrderDetail.Add(x);
+            try
+            {
+                db.SaveChanges();
+                //return CreatedAtRoute("DefaultApi", new { id = bill.BillId }, bill);
+                return Ok("Insert succeed!");
+            }
+            catch (Exception)
+            {
+                return BadRequest("The INSERT statement conflicted with the FOREIGN KEY constraint!");
+            }
         }
 
         // DELETE: api/OrderDetails/5
@@ -94,11 +132,17 @@ namespace PhoneInventoryManagement.Controllers
             {
                 return NotFound();
             }
-
-            db.OrderDetail.Remove(orderDetail);
-            db.SaveChanges();
-
-            return Ok(orderDetail);
+            orderDetail.IsActive = false;
+            db.Entry(orderDetail).State = EntityState.Modified;
+            try
+            {
+                db.SaveChanges();
+                return Ok("Delete succeed!");
+            }
+            catch (Exception)
+            {
+                return BadRequest("Delete failed!");
+            }
         }
 
         protected override void Dispose(bool disposing)

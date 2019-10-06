@@ -17,9 +17,20 @@ namespace PhoneInventoryManagement.Controllers
         private PhoneIMDbContext db = new PhoneIMDbContext();
 
         // GET: api/Users
-        public IQueryable<User> GetUser()
+        public IHttpActionResult GetUser()
         {
-            return db.User;
+            var result = db.User.Select(x => new
+            {
+                x.UserId,
+                x.UserName,
+                x.Password,
+                x.Email,
+                x.Address,
+                x.PhoneNumber,
+                x.IsActive,
+                x.RoleId
+            });
+            return Ok(result);
         }
 
         // GET: api/Users/5
@@ -31,8 +42,18 @@ namespace PhoneInventoryManagement.Controllers
             {
                 return NotFound();
             }
-
-            return Ok(user);
+            var x = new User
+            {
+                UserId = user.UserId,
+                UserName = user.UserName,
+                Password = user.Password,
+                Email = user.Email,
+                Address = user.Address,
+                PhoneNumber = user.PhoneNumber,
+                IsActive = user.IsActive,
+                RoleId = user.RoleId
+            };
+            return Ok(x);
         }
 
         // PUT: api/Users/5
@@ -46,16 +67,26 @@ namespace PhoneInventoryManagement.Controllers
 
             if (id != user.UserId)
             {
-                return BadRequest();
+                return BadRequest("Parameter id and Role.RoleId error.");
             }
-
-            db.Entry(user).State = EntityState.Modified;
-
+            var x = new User
+            {
+                UserId = user.UserId,
+                UserName = user.UserName,
+                Password = user.Password,
+                Email = user.Email,
+                Address = user.Address,
+                PhoneNumber = user.PhoneNumber,
+                IsActive = user.IsActive,
+                RoleId = user.RoleId
+            };
+            db.Entry(x).State = EntityState.Modified;
             try
             {
                 db.SaveChanges();
+                return Ok("Update succeed!");
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception)
             {
                 if (!UserExists(id))
                 {
@@ -63,11 +94,10 @@ namespace PhoneInventoryManagement.Controllers
                 }
                 else
                 {
-                    throw;
+                    //throw ex;
+                    return BadRequest("The INSERT statement conflicted with the FOREIGN KEY constraint!");
                 }
             }
-
-            return StatusCode(HttpStatusCode.NoContent);
         }
 
         // POST: api/Users
@@ -78,11 +108,28 @@ namespace PhoneInventoryManagement.Controllers
             {
                 return BadRequest(ModelState);
             }
-
-            db.User.Add(user);
-            db.SaveChanges();
-
-            return CreatedAtRoute("DefaultApi", new { id = user.UserId }, user);
+            var x = new User
+            {
+                UserId = user.UserId,
+                UserName = user.UserName,
+                Password = user.Password,
+                Email = user.Email,
+                Address = user.Address,
+                PhoneNumber = user.PhoneNumber,
+                IsActive = user.IsActive,
+                RoleId = user.RoleId
+            };
+            db.User.Add(x);
+            try
+            {
+                db.SaveChanges();
+                //return CreatedAtRoute("DefaultApi", new { id = bill.BillId }, bill);
+                return Ok("Insert succeed!");
+            }
+            catch (Exception)
+            {
+                return BadRequest("The INSERT statement conflicted with the FOREIGN KEY constraint!");
+            }
         }
 
         // DELETE: api/Users/5
@@ -94,11 +141,17 @@ namespace PhoneInventoryManagement.Controllers
             {
                 return NotFound();
             }
-
-            db.User.Remove(user);
-            db.SaveChanges();
-
-            return Ok(user);
+            user.IsActive = false;
+            db.Entry(user).State = EntityState.Modified;
+            try
+            {
+                db.SaveChanges();
+                return Ok("Delete succeed!");
+            }
+            catch (Exception)
+            {
+                return BadRequest("Delete failed!");
+            }
         }
 
         protected override void Dispose(bool disposing)

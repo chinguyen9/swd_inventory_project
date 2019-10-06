@@ -17,9 +17,18 @@ namespace PhoneInventoryManagement.Controllers
         private PhoneIMDbContext db = new PhoneIMDbContext();
 
         // GET: api/Orders
-        public IQueryable<Order> GetOrder()
+        public IHttpActionResult GetOrder()
         {
-            return db.Order;
+            var result = db.Order.Select(x => new
+            {
+                x.OrderId,
+                x.CustomerName,
+                x.DateCreate,
+                x.TotalPrice,
+                x.IsActive,
+                x.UserId
+            });
+            return Ok(result);
         }
 
         // GET: api/Orders/5

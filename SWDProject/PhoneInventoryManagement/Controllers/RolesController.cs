@@ -17,9 +17,15 @@ namespace PhoneInventoryManagement.Controllers
         private PhoneIMDbContext db = new PhoneIMDbContext();
 
         // GET: api/Roles
-        public IQueryable<Role> GetRole()
+        public IHttpActionResult GetRole()
         {
-            return db.Role;
+            var result = db.Role.Select(x => new
+            {
+                x.RoleId,
+                x.RoleName,
+                x.IsActive
+            });
+            return Ok(result);
         }
 
         // GET: api/Roles/5
@@ -31,8 +37,13 @@ namespace PhoneInventoryManagement.Controllers
             {
                 return NotFound();
             }
-
-            return Ok(role);
+            var x = new Role
+            {
+                RoleId = role.RoleId,
+                RoleName = role.RoleName,
+                IsActive = role.IsActive
+            };
+            return Ok(x);
         }
 
         // PUT: api/Roles/5
@@ -46,16 +57,22 @@ namespace PhoneInventoryManagement.Controllers
 
             if (id != role.RoleId)
             {
-                return BadRequest();
+                return BadRequest("Parameter id and Role.RoleId error.");
             }
-
-            db.Entry(role).State = EntityState.Modified;
+            var x = new Role
+            {
+                RoleId = role.RoleId,
+                RoleName = role.RoleName,
+                IsActive = role.IsActive
+            };
+            db.Entry(x).State = EntityState.Modified;
 
             try
             {
                 db.SaveChanges();
+                return Ok("Update succeed!");
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception)
             {
                 if (!RoleExists(id))
                 {
@@ -63,11 +80,10 @@ namespace PhoneInventoryManagement.Controllers
                 }
                 else
                 {
-                    throw;
+                    //throw ex;
+                    return BadRequest("The INSERT statement conflicted with the FOREIGN KEY constraint!");
                 }
             }
-
-            return StatusCode(HttpStatusCode.NoContent);
         }
 
         // POST: api/Roles
@@ -78,11 +94,23 @@ namespace PhoneInventoryManagement.Controllers
             {
                 return BadRequest(ModelState);
             }
+            var x = new Role
+            {
+                RoleName = role.RoleName,
+                IsActive = role.IsActive
+            };
 
-            db.Role.Add(role);
-            db.SaveChanges();
-
-            return CreatedAtRoute("DefaultApi", new { id = role.RoleId }, role);
+            db.Role.Add(x);
+            try
+            {
+                db.SaveChanges();
+                //return CreatedAtRoute("DefaultApi", new { id = bill.BillId }, bill);
+                return Ok("Insert succeed!");
+            }
+            catch (Exception)
+            {
+                return BadRequest("The INSERT statement conflicted with the FOREIGN KEY constraint!");
+            }
         }
 
         // DELETE: api/Roles/5
@@ -94,11 +122,17 @@ namespace PhoneInventoryManagement.Controllers
             {
                 return NotFound();
             }
-
-            db.Role.Remove(role);
-            db.SaveChanges();
-
-            return Ok(role);
+            role.IsActive = false;
+            db.Entry(role).State = EntityState.Modified;
+            try
+            {
+                db.SaveChanges();
+                return Ok("Delete succeed!");
+            }
+            catch (Exception)
+            {
+                return BadRequest("Delete failed!");
+            }
         }
 
         protected override void Dispose(bool disposing)
