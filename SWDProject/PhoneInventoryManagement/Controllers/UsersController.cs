@@ -12,14 +12,17 @@ using PhoneInventoryManagement.Models;
 
 namespace PhoneInventoryManagement.Controllers
 {
+    [RoutePrefix("Users")]
     public class UsersController : ApiController
     {
         private PhoneIMDbContext db = new PhoneIMDbContext();
 
         // GET: api/Users
+
+        [HttpGet, Route("")]
         public IHttpActionResult GetUser()
         {
-            var result = db.User.Select(x => new
+            return Ok(db.User.Select(x => new
             {
                 x.UserId,
                 x.UserName,
@@ -29,33 +32,10 @@ namespace PhoneInventoryManagement.Controllers
                 x.PhoneNumber,
                 x.IsActive,
                 x.RoleId
-            });
-            return Ok(result);
+            }));
         }
 
-        // GET: api/Users/5
-        [ResponseType(typeof(User))]
-        public IHttpActionResult GetUser(Guid id)
-        {
-            User user = db.User.Find(id);
-            if (user == null)
-            {
-                return NotFound();
-            }
-            var x = new User
-            {
-                UserId = user.UserId,
-                UserName = user.UserName,
-                Password = user.Password,
-                Email = user.Email,
-                Address = user.Address,
-                PhoneNumber = user.PhoneNumber,
-                IsActive = user.IsActive,
-                RoleId = user.RoleId
-            };
-            return Ok(x);
-        }
-
+       
         // PUT: api/Users/5
         [ResponseType(typeof(void))]
         public IHttpActionResult PutUser(Guid id, User user)
