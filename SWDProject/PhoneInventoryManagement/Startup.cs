@@ -20,10 +20,10 @@ namespace IdentitySample
                 AllowInsecureHttp = true,
                 Provider = new CustomOauthAuthorizationServerProvider()
             });
-
             app.UseOAuthBearerAuthentication(new OAuthBearerAuthenticationOptions());
 
             ConfigureAuth(app);
+            
         }
     }
 }
